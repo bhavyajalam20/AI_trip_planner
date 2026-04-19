@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Trip Itinerary - AI Trip Planner</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-color);
+            color: var(--dark-color);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        
+        nav {
+            background-color: var(--dark-color);
+            padding: 10px 0;
+        }
+        
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        
+        nav li {
+            display: inline-block;
+            margin: 0 15px;
+        }
+        
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: color 0.3s;
+        }
+        
+        nav a:hover {
+            color: var(--secondary-color);
+        }
+        
+        .itinerary-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin: 40px auto;
+        }
+        
+        .summary-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .day-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .activity {
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .activity-time {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .cost {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .tips-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e3f2fd;
+            border-radius: 8px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+        }
+        
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 40px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>AI Trip Planner</h1>
+        </div>
+    </header>
+    
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="planner.html">Plan Trip</a></li>
+            <li><a href="about.html">About</a></li>
+        </ul>
+    </nav>
+    
+    <div class="container">
+        <div class="itinerary-container" id="itineraryContent">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading your itinerary...
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 AI Trip Planner. Powered by Gemini API.</p>
+        </div>
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const itineraryContent = document.getElementById('itineraryContent');
+            
+            // Get itinerary from sessionStorage
+            const itinerary = JSON.parse(sessionStorage.getItem('tripItinerary'));
+            
+            if (itinerary) {
+                displayItinerary(itinerary);
+            } else {
+                itineraryContent.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>No itinerary found. Please plan a trip first.</p>
+                        <a href="planner.html" class="btn">Plan a New Trip</a>
+                    </div>
+                `;
+            }
+            
+            function displayItinerary(itinerary) {
+                let html = '';
+                
+                // Check if the response is in the expected format
+                if (itinerary.days) {
+                    // Standard JSON format
+                    html += `
+                        <div class="summary-section">
+                            <h2>Trip Summary</h2>
+                            <p>${itinerary.summary}</p>
+                        </div>
+                    `;
+                    
+                    // Add each day's activities
+                    itinerary.days.forEach(day => {
+                        html += `
+                            <div class="day-section">
+                                <h3>${day.date}</h3>
+                        `;
+                        
+                        day.activities.forEach(activity => {
+                            html += `
+                                <div class="activity">
+                                    <div class="activity-time">${activity.time}</div>
+                                    <h4>${activity.description}</h4>
+                                    <p><strong>Location:</strong> ${activity.location}</p>
+                                    <p><strong>Estimated Cost:</strong> <span class="cost">${activity.estimatedCost}</span></p>
+                                    ${activity.notes ? `<p><strong>Notes:</strong> ${activity.notes}</p>` : ''}
+                                </div>
+                            `;
+                        });
+                        
+                        html += `
+                                <div class="transportation">
+                                    <h4>Transportation</h4>
+                                    <p>${day.transportation}</p>
+                                </div>
+                                
+                                <div class="accommodation">
+                                    <h4>Accommodation</h4>
+                                    <p>${day.accommodation}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Add total cost and tips
+                    html += `
+                        <div class="total-cost">
+                            <h3>Total Estimated Cost: <span class="cost">${itinerary.totalEstimatedCost}</span></h3>
+                        </div>
+                        
+                        <div class="tips-section">
+                            <h3>Travel Tips</h3>
+                            <p>${itinerary.travelTips}</p>
+                        </div>
+                    `;
+                } else if (itinerary.details) {
+                    // Fallback for raw text response
+                    html = `
+                        <div class="summary-section">
+                            <h2>Your Trip Itinerary</h2>
+                            <pre>${itinerary.details}</pre>
+                        </div>
+                    `;
+                } else {
+                    // Unknown format
+                    html = `
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Could not display itinerary in the expected format.</p>
+                            <pre>${JSON.stringify(itinerary, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+                
+                itineraryContent.innerHTML = html;
+            }
+        });
+    </script>
+</body>
+</html>

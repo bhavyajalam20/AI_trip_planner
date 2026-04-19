@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Plan Your Trip - AI Trip Planner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            gap: 20px;
+        }
+
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            position: relative;
+        }
+
+        .step.completed {
+            background: #10b981;
+        }
+
+        .step.active {
+            background: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        }
+
+        .step.inactive {
+            background: #d1d5db;
+            color: #6b7280;
+        }
+
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            width: 20px;
+            height: 2px;
+            background: #d1d5db;
+            transform: translateY(-50%);
+        }
+
+        .step:last-child::after {
+            display: none;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+
+        h1 {
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        h2 {
+            color: #374151;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+            user-select: none;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .date-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .interests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .interest-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .interest-item:hover {
+            border-color: #3b82f6;
+            background: #f8fafc;
+        }
+
+        .interest-item.selected {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .interest-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            transform: scale(1.2);
+            pointer-events: none;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 14px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            user-select: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+        }
+
+        .success-message {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .itinerary-page {
+            display: none;
+        }
+
+        .itinerary-page.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .itinerary-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .destination-info {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .destination-info h2 {
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .trip-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .detail-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .detail-card h3 {
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-card p {
+            color: #1f2937;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .day-schedule {
+            margin-bottom: 30px;
+        }
+
+        .day-header {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .day-header h3 {
+            color: white;
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .activities {
+            display: grid;
+            gap: 15px;
+        }
+
+        .activity {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .activity:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .activity h4 {
+            color: #1f2937;
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .activity-time {
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .activity p {
+            color: #6b7280;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .back-to-form {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .date-group {
+                grid-template-columns: 1fr;
+            }
+
+            .interests-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .trip-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step active" id="step1">1</div>
+            <div class="step inactive" id="step2">2</div>
+            <div class="step inactive" id="step3">3</div>
+            <div class="step inactive" id="step4">4</div>
+        </div>
+
+        <!-- Form Sections -->
+        <div class="form-section active" id="destination-section">
+            <h1>Plan Your Perfect Trip</h1>
+            <h2>Where would you like to go?</h2>
+            
+            <div class="form-group">
+                <label for="destination">Destination</label>
+                <select id="destination" required>
+                    <option value="">Select a destination</option>
+                    <option value="paris">Paris, France</option>
+                    <option value="tokyo">Tokyo, Japan</option>
+                    <option value="bali">Bali, Indonesia</option>
+                    <option value="dubai">Dubai, UAE</option>
+                    <option value="thailand">Bangkok, Thailand</option>
+                    <option value="newyork">New York, USA</option>
+                    <option value="london">London, UK</option>
+                    <option value="singapore">Singapore</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Travel Dates</label>
+                <div class="date-group">
+                    <div>
+                        <label for="start-date">Departure Date</label>
+                        <input type="date" id="start-date" required />
+                    </div>
+                    <div>
+                        <label for="end-date">Return Date</label>
+                        <input type="date" id="end-date" required />
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <div></div>
+                <button class="btn btn-primary" type="button" onclick="nextStep()">Next</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="preferences-section">
+            <h2>Tell us about your travel preferences</h2>
+            
+            <div class="form-group">
+                <label for="budget">Budget Range</label>
+                <select id="budget" required>
+                    <option value="">Select budget range</option>
+                    <option value="budget">Budget ($50-100/day)</option>
+                    <option value="mid-range">Mid-range ($100-250/day)</option>
+                    <option value="luxury">Luxury ($250+/day)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="travelers">Number of Travelers</label>
+                <select id="travelers" required>
+                    <option value="">Select number of travelers</option>
+                    <option value="1">Solo (1 person)</option>
+                    <option value="2">Couple (2 people)</option>
+                    <option value="3-4">Small group (3-4 people)</option>
+                    <option value="5+">Large group (5+ people)</option>
+                </select>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" type="button" onclick="prevStep()">Back</button>
+                <button class="btn btn-primary" type="button" onclick="nextStep()">Next</button>
+            </div>
+        </div>
+
+        <div class="form-section" id="interests-section">
+            <h2>Select Your Interests</h2>
+            
+            <div class="interests-grid">
+                <div class="interest-item" onclick="toggleInterest(this)">
+                    <input type="checkbox" name="interests" value="culture" />
+                    <label>Culture</label>
+                </div>
+                <div class="interest-item" onclick="toggleInterest(this)">
+                    <input type="checkbox" name="interests" value="nature" />
+                    <label>Nature</label>
+                </div>
+                <div class="interest-item" onclick="toggleInterest(this)">
+                    <input type="checkbox" name="interests" value="food" />
+                    <label>Food &amp; Cuisine</label>
+                </div>
+                <div class="interest-item" onclick="toggleInterest(this)">
+                    <input type="checkbox" name="interests" value="adventure" />
+                    <label>Adventure</label>
+                </div>
+                <div class="interest-item" onclick="toggleInterest(this)">
+                    <input type="checkbox" name="interests" value="relaxation" />
+                    <label>Relaxation</label>
+                </div>
+                <div class="interest-item" onclick="toggleInterest(this)">
+                    <input type="checkbox" name="interests" value="shopping" />
+                    <label>Shopping</label>
+                </div>
+                <div class="interest-item" onclick="toggleInterest(this)">
+                    <input type="checkbox" name="interests" value="nightlife" />
+                    <label>Nightlife</label>
+                </div>
+                <div class="interest-item" onclick="toggleInterest(this)">
+                    <input type="checkbox" name="interests" value="history" />
+                    <label>History</label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 30px;">
+                <label for="additional-info">Additional Information or Requests</label>
+                <textarea id="additional-info" placeholder="Any special requirements or preferences..."></textarea>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" type="button" onclick="prevStep()">Back</button>
+                <button class="btn btn-primary" type="button" onclick="generateItinerary()">Generate Itinerary</button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Creating your personalized itinerary...</p>
+        </div>
+
+        <!-- Success Message -->
+        <div class="form-section" id="success-section">
+            <div class="success-message">
+                Itinerary generated successfully!
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" type="button" onclick="prevStep()">Back</button>
+                <button class="btn btn-primary" type="button" onclick="showItinerary()">View Itinerary</button>
+            </div>
+        </div>
+
+        <!-- Itinerary Page -->
+        <div class="itinerary-page" id="itinerary-page">
+            <div class="itinerary-header">
+                <h1>Your Personalized Itinerary</h1>
+            </div>
+
+            <div class="destination-info">
+                <h2 id="itinerary-destination">Paris, France</h2>
+                <p id="itinerary-dates">May 28 - May 31st, 2025</p>
+            </div>
+
+            <div class="trip-details">
+                <div class="detail-card">
+                    <h3>Duration</h3>
+                    <p id="trip-duration">7 Days</p>
+                </div>
+                <div class="detail-card">
+                    <h3>Budget</h3>
+                    <p id="trip-budget">Mid-range</p>
+                </div>
+                <div class="detail-card">
+                    <h3>Travelers</h3>
+                    <p id="trip-travelers">2 People</p>
+                </div>
+                <div class="detail-card">
+                    <h3>Interests</h3>
+                    <p id="trip-interests">Food, Art &amp; Culture</p>
+                </div>
+            </div>
+
+            <div id="itinerary-content">
+                <!-- Dynamic itinerary content will be injected here -->
+            </div>
+
+            <div class="back-to-form">
+                <button class="btn btn-secondary" type="button" onclick="backToForm()">Plan Another Trip</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 4;
+
+        const itineraryData = {
+            paris: {
+                name: "Paris, France",
+                days: [
+                    {
+                        title: "Day 1 - Arrival & Classic Paris",
+                        activities: [
+                            {
+                                name: "Check-in & Freshen Up",
+                                time: "2:00 PM",
+                                description: "Arrive at your hotel and get settled. Take some time to freshen up after your journey."
+                            },
+                            {
+                                name: "Eiffel Tower Visit",
+                                time: "4:00 PM",
+                                description: "Visit the iconic Eiffel Tower. Take the elevator to the top for stunning views of Paris."
+                            },
+                            {
+                                name: "Seine River Cruise",
+                                time: "6:30 PM",
+                                description: "Enjoy a relaxing evening cruise along the Seine River with dinner."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 2 - Art & Culture",
+                        activities: [
+                            {
+                                name: "Louvre Museum",
+                                time: "9:00 AM",
+                                description: "Explore the world's largest art museum. Don't miss the Mona Lisa and Venus de Milo."
+                            },
+                            {
+                                name: "Lunch at Café de Flore",
+                                time: "1:00 PM",
+                                description: "Experience classic Parisian café culture at this historic establishment."
+                            },
+                            {
+                                name: "Montmartre & Sacré-Cœur",
+                                time: "3:00 PM",
+                                description: "Wander through the artistic district of Montmartre and visit the beautiful Sacré-Cœur Basilica."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 3 - Historic Paris",
+                        activities: [
+                            {
+                                name: "Notre-Dame & Île de la Cité",
+                                time: "10:00 AM",
+                                description: "Visit the historic Notre-Dame Cathedral area and explore Île de la Cité."
+                            },
+                            {
+                                name: "Latin Quarter Exploration",
+                                time: "2:00 PM",
+                                description: "Stroll through the charming Latin Quarter with its narrow streets and historic buildings."
+                            },
+                            {
+                                name: "Sunset at Arc de Triomphe",
+                                time: "6:00 PM",
+                                description: "Climb the Arc de Triomphe for panoramic views and watch the sunset over the Champs-Élysées."
+                            }
+                        ]
+                    }
+                ]
+            },
+            tokyo: {
+                name: "Tokyo, Japan",
+                days: [
+                    {
+                        title: "Day 1 - Traditional Tokyo",
+                        activities: [
+                            {
+                                name: "Senso-ji Temple",
+                                time: "9:00 AM",
+                                description: "Visit Tokyo's oldest temple in Asakusa and explore the traditional Nakamise shopping street."
+                            },
+                            {
+                                name: "Traditional Sushi Lunch",
+                                time: "12:30 PM",
+                                description: "Experience authentic sushi at a traditional restaurant in Tsukiji area."
+                            },
+                            {
+                                name: "Imperial Palace Gardens",
+                                time: "3:00 PM",
+                                description: "Stroll through the beautiful East Gardens of the Imperial Palace."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 2 - Modern Tokyo",
+                        activities: [
+                            {
+                                name: "Shibuya Crossing",
+                                time: "10:00 AM",
+                                description: "Experience the world's busiest pedestrian crossing and explore Shibuya district."
+                            },
+                            {
+                                name: "Harajuku & Takeshita Street",
+                                time: "1:00 PM",
+                                description: "Discover Tokyo's youth culture and unique fashion in the vibrant Harajuku area."
+                            },
+                            {
+                                name: "Tokyo Skytree",
+                                time: "5:00 PM",
+                                description: "Enjoy panoramic views of Tokyo from one of the world's tallest towers."
+                            }
+                        ]
+                    }
+                ]
+            },
+            bali: {
+                name: "Bali, Indonesia",
+                days: [
+                    {
+                        title: "Day 1 - Ubud Culture",
+                        activities: [
+                            {
+                                name: "Sacred Monkey Forest",
+                                time: "9:00 AM",
+                                description: "Visit the Sacred Monkey Forest Sanctuary and interact with playful macaques."
+                            },
+                            {
+                                name: "Ubud Market & Lunch",
+                                time: "11:30 AM",
+                                description: "Explore the traditional Ubud Market and enjoy local Balinese cuisine."
+                            },
+                            {
+                                name: "Tegallalang Rice Terraces",
+                                time: "2:30 PM",
+                                description: "Marvel at the stunning rice terraces and learn about traditional farming."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 2 - Beach & Temples",
+                        activities: [
+                            {
+                                name: "Tanah Lot Temple",
+                                time: "8:00 AM",
+                                description: "Visit the iconic sea temple perched on a rock formation."
+                            },
+                            {
+                                name: "Seminyak Beach",
+                                time: "12:00 PM",
+                                description: "Relax on the beautiful beach and enjoy water activities."
+                            },
+                            {
+                                name: "Sunset at Uluwatu",
+                                time: "5:30 PM",
+                                description: "Watch the spectacular sunset at Uluwatu Temple with traditional Kecak dance."
+                            }
+                        ]
+                    }
+                ]
+            },
+            dubai: {
+                name: "Dubai, UAE",
+                days: [
+                    {
+                        title: "Day 1 - Modern Dubai",
+                        activities: [
+                            {
+                                name: "Burj Khalifa & Dubai Mall",
+                                time: "10:00 AM",
+                                description: "Visit the world's tallest building and explore one of the largest shopping malls in the world."
+                            },
+                            {
+                                name: "Dubai Fountain Show",
+                                time: "1:00 PM",
+                                description: "Watch the spectacular water fountain show set to music at the base of Burj Khalifa."
+                            },
+                            {
+                                name: "Dubai Marina Walk",
+                                time: "5:00 PM",
+                                description: "Stroll along the beautiful waterfront promenade with stunning skyscraper views."
+                            },
+                            {
+                                name: "Traditional Dhow Cruise Dinner",
+                                time: "7:30 PM",
+                                description: "Enjoy a romantic dinner cruise on a traditional wooden dhow boat."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 2 - Culture & Adventure",
+                        activities: [
+                            {
+                                name: "Gold & Spice Souks",
+                                time: "9:00 AM",
+                                description: "Explore the traditional markets in old Dubai and experience authentic Arabian culture."
+                            },
+                            {
+                                name: "Dubai Museum & Al Fahidi Fort",
+                                time: "11:30 AM",
+                                description: "Learn about Dubai's history and heritage at the city's main museum."
+                            },
+                            {
+                                name: "Desert Safari",
+                                time: "3:00 PM",
+                                description: "Experience dune bashing, camel riding, and traditional Bedouin entertainment."
+                            },
+                            {
+                                name: "BBQ Dinner in Desert",
+                                time: "7:00 PM",
+                                description: "Enjoy a traditional Arabic BBQ dinner under the stars in the desert."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 3 - Beaches & Luxury",
+                        activities: [
+                            {
+                                name: "Atlantis The Palm",
+                                time: "10:00 AM",
+                                description: "Visit the iconic resort, explore the aquarium, and enjoy water activities."
+                            },
+                            {
+                                name: "Jumeirah Beach",
+                                time: "1:00 PM",
+                                description: "Relax on pristine white sand beaches with views of Burj Al Arab."
+                            },
+                            {
+                                name: "Burj Al Arab Tour",
+                                time: "4:00 PM",
+                                description: "Take a guided tour of the world's only 7-star hotel."
+                            },
+                            {
+                                name: "Sunset at Madinat Jumeirah",
+                                time: "6:30 PM",
+                                description: "End your trip with dinner at the beautiful Arabian-themed resort complex."
+                            }
+                        ]
+                    }
+                ]
+            },
+            thailand: {
+                name: "Bangkok, Thailand",
+                days: [
+                    {
+                        title: "Day 1 - Temples & Culture",
+                        activities: [
+                            {
+                                name: "Grand Palace & Wat Phra Kaew",
+                                time: "9:00 AM",
+                                description: "Visit Thailand's most sacred temple and the former royal residence."
+                            },
+                            {
+                                name: "Wat Pho Temple",
+                                time: "12:00 PM",
+                                description: "See the famous Reclining Buddha and experience traditional Thai massage."
+                            },
+                            {
+                                name: "Chao Phraya River Cruise",
+                                time: "3:00 PM",
+                                description: "Take a scenic boat ride along Bangkok's main river."
+                            },
+                            {
+                                name: "Khao San Road Night Market",
+                                time: "7:00 PM",
+                                description: "Experience Bangkok's famous backpacker street with street food and nightlife."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 2 - Markets & Food",
+                        activities: [
+                            {
+                                name: "Damnoen Saduak Floating Market",
+                                time: "8:00 AM",
+                                description: "Experience the famous floating market and authentic Thai breakfast."
+                            },
+                            {
+                                name: "Maeklong Railway Market",
+                                time: "11:00 AM",
+                                description: "Witness the incredible market that operates on active railway tracks."
+                            },
+                            {
+                                name: "Thai Cooking Class",
+                                time: "2:00 PM",
+                                description: "Learn to cook authentic Thai dishes with a professional chef."
+                            },
+                            {
+                                name: "Chatuchak Weekend Market",
+                                time: "5:00 PM",
+                                description: "Shop at one of the world's largest weekend markets."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 3 - Modern Bangkok",
+                        activities: [
+                            {
+                                name: "Jim Thompson House",
+                                time: "10:00 AM",
+                                description: "Explore the beautiful traditional Thai house and silk museum."
+                            },
+                            {
+                                name: "MBK Center & Siam Square",
+                                time: "1:00 PM",
+                                description: "Shop at modern malls and experience contemporary Bangkok culture."
+                            },
+                            {
+                                name: "Sky Bar at Lebua",
+                                time: "5:00 PM",
+                                description: "Enjoy panoramic city views from one of the world's highest rooftop bars."
+                            },
+                            {
+                                name: "Lumpini Park Evening",
+                                time: "7:30 PM",
+                                description: "Relax in Bangkok's green oasis and watch locals exercise."
+                            }
+                        ]
+                    }
+                ]
+            },
+            newyork: {
+                name: "New York, USA",
+                days: [
+                    {
+                        title: "Day 1 - Classic Manhattan",
+                        activities: [
+                            {
+                                name: "Statue of Liberty & Ellis Island",
+                                time: "9:00 AM",
+                                description: "Take the ferry to visit America's most iconic symbols of freedom."
+                            },
+                            {
+                                name: "9/11 Memorial & Museum",
+                                time: "1:00 PM",
+                                description: "Pay respects at the moving memorial and learn about that historic day."
+                            },
+                            {
+                                name: "Wall Street & Financial District",
+                                time: "3:30 PM",
+                                description: "Walk through the heart of American finance and see the Charging Bull."
+                            },
+                            {
+                                name: "Brooklyn Bridge Walk",
+                                time: "5:00 PM",
+                                description: "Stroll across the iconic bridge for stunning city skyline views."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 2 - Midtown & Culture",
+                        activities: [
+                            {
+                                name: "Times Square & Broadway",
+                                time: "10:00 AM",
+                                description: "Experience the energy of NYC's most famous intersection."
+                            },
+                            {
+                                name: "Empire State Building",
+                                time: "12:00 PM",
+                                description: "Visit the Art Deco masterpiece and enjoy 360-degree city views."
+                            },
+                            {
+                                name: "Central Park",
+                                time: "2:30 PM",
+                                description: "Relax in Manhattan's green heart and visit Bethesda Fountain."
+                            },
+                            {
+                                name: "Metropolitan Museum of Art",
+                                time: "4:00 PM",
+                                description: "Explore one of the world's largest and most prestigious art museums."
+                            },
+                            {
+                                name: "Broadway Show",
+                                time: "8:00 PM",
+                                description: "End the day with a world-class Broadway musical or play."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 3 - Neighborhoods & Views",
+                        activities: [
+                            {
+                                name: "High Line Park",
+                                time: "10:00 AM",
+                                description: "Walk the elevated park built on former railway tracks in Chelsea."
+                            },
+                            {
+                                name: "Greenwich Village & SoHo",
+                                time: "12:00 PM",
+                                description: "Explore charming neighborhoods with unique shops and cafes."
+                            },
+                            {
+                                name: "One World Observatory",
+                                time: "3:00 PM",
+                                description: "Experience breathtaking views from the tallest building in the Western Hemisphere."
+                            },
+                            {
+                                name: "Little Italy & Chinatown",
+                                time: "5:30 PM",
+                                description: "End your trip exploring diverse cultural neighborhoods and cuisine."
+                            }
+                        ]
+                    }
+                ]
+            },
+            london: {
+                name: "London, UK",
+                days: [
+                    {
+                        title: "Day 1 - Royal London",
+                        activities: [
+                            {
+                                name: "Tower of London",
+                                time: "9:00 AM",
+                                description: "Visit the historic fortress and see the Crown Jewels."
+                            },
+                            {
+                                name: "Tower Bridge",
+                                time: "11:30 AM",
+                                description: "Walk across the iconic Victorian bridge and visit the exhibition."
+                            },
+                            {
+                                name: "Westminster Abbey",
+                                time: "2:00 PM",
+                                description: "Explore the gothic church where British monarchs are crowned."
+                            },
+                            {
+                                name: "Big Ben & Houses of Parliament",
+                                time: "4:00 PM",
+                                description: "See London's most famous clock tower and the seat of British government."
+                            },
+                            {
+                                name: "Thames Evening Cruise",
+                                time: "6:30 PM",
+                                description: "Enjoy dinner while cruising along the River Thames."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 2 - Museums & Parks",
+                        activities: [
+                            {
+                                name: "British Museum",
+                                time: "9:30 AM",
+                                description: "Discover world treasures including the Rosetta Stone and Egyptian mummies."
+                            },
+                            {
+                                name: "Covent Garden",
+                                time: "1:00 PM",
+                                description: "Shop, dine, and enjoy street performances in this historic market area."
+                            },
+                            {
+                                name: "Hyde Park & Speakers' Corner",
+                                time: "3:00 PM",
+                                description: "Stroll through London's largest park and visit the famous free speech area."
+                            },
+                            {
+                                name: "Buckingham Palace",
+                                time: "4:30 PM",
+                                description: "See the official residence of the British monarch."
+                            },
+                            {
+                                name: "West End Show",
+                                time: "7:30 PM",
+                                description: "Enjoy a world-class musical or play in London's theater district."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 3 - Modern London",
+                        activities: [
+                            {
+                                name: "London Eye",
+                                time: "10:00 AM",
+                                description: "Take a ride on the giant observation wheel for panoramic city views."
+                            },
+                            {
+                                name: "Tate Modern",
+                                time: "12:00 PM",
+                                description: "Explore contemporary art in this converted power station."
+                            },
+                            {
+                                name: "Borough Market",
+                                time: "2:30 PM",
+                                description: "Sample artisanal foods at London's oldest food market."
+                            },
+                            {
+                                name: "The Shard",
+                                time: "4:00 PM",
+                                description: "Visit Western Europe's tallest building for stunning views."
+                            },
+                            {
+                                name: "Camden Market",
+                                time: "6:00 PM",
+                                description: "End your trip exploring the eclectic market known for alternative culture."
+                            }
+                        ]
+                    }
+                ]
+            },
+            singapore: {
+                name: "Singapore",
+                days: [
+                    {
+                        title: "Day 1 - Gardens & Culture",
+                        activities: [
+                            {
+                                name: "Gardens by the Bay",
+                                time: "9:00 AM",
+                                description: "Explore the futuristic Supertrees and climate-controlled conservatories."
+                            },
+                            {
+                                name: "Marina Bay Sands SkyPark",
+                                time: "12:00 PM",
+                                description: "Visit the iconic infinity pool area and observation deck."
+                            },
+                            {
+                                name: "Chinatown Heritage Centre",
+                                time: "2:30 PM",
+                                description: "Learn about Singapore's Chinese immigrant history and culture."
+                            },
+                            {
+                                name: "Merlion Park",
+                                time: "4:30 PM",
+                                description: "See Singapore's iconic half-lion, half-fish statue."
+                            },
+                            {
+                                name: "Clarke Quay Night Market",
+                                time: "7:00 PM",
+                                description: "Enjoy riverside dining and nightlife along the Singapore River."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 2 - Nature & Heritage",
+                        activities: [
+                            {
+                                name: "Singapore Zoo",
+                                time: "9:00 AM",
+                                description: "Visit one of the world's best rainforest zoos with open-concept enclosures."
+                            },
+                            {
+                                name: "River Safari",
+                                time: "1:00 PM",
+                                description: "Experience Asia's first and only river-themed wildlife park."
+                            },
+                            {
+                                name: "Little India",
+                                time: "3:30 PM",
+                                description: "Explore the vibrant Indian quarter with colorful shops and temples."
+                            },
+                            {
+                                name: "Arab Street & Sultan Mosque",
+                                time: "5:00 PM",
+                                description: "Discover the historic Arab quarter and its beautiful mosque."
+                            },
+                            {
+                                name: "Night Safari",
+                                time: "7:30 PM",
+                                description: "Experience the world's first nocturnal zoo with over 900 animals."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 3 - Islands & Shopping",
+                        activities: [
+                            {
+                                name: "Sentosa Island",
+                                time: "10:00 AM",
+                                description: "Take the cable car to Singapore's resort island for beaches and attractions."
+                            },
+                            {
+                                name: "Universal Studios Singapore",
+                                time: "11:00 AM",
+                                description: "Enjoy thrilling rides and attractions at Southeast Asia's first Universal Studios."
+                            },
+                            {
+                                name: "Orchard Road Shopping",
+                                time: "4:00 PM",
+                                description: "Shop along Singapore's famous shopping street with luxury malls."
+                            },
+                            {
+                                name: "Singapore Flyer",
+                                time: "6:00 PM",
+                                description: "End your trip with a ride on the giant observation wheel."
+                            },
+                            {
+                                name: "Hawker Center Dinner",
+                                time: "8:00 PM",
+                                description: "Experience authentic Singaporean street food at a traditional hawker center."
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        function updateStepIndicator() {
+            for (let i = 1; i <= totalSteps; i++) {
+                const step = document.getElementById(`step${i}`);
+                if (i < currentStep) {
+                    step.className = 'step completed';
+                } else if (i === currentStep) {
+                    step.className = 'step active';
+                } else {
+                    step.className = 'step inactive';
+                }
+            }
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            const el = document.getElementById(sectionId);
+            if (el) el.classList.add('active');
+        }
+
+        function nextStep() {
+            if (validateCurrentStep()) {
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    updateStepIndicator();
+                    const sections = ['destination-section', 'preferences-section', 'interests-section', 'success-section'];
+                    showSection(sections[currentStep - 1]);
+                }
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateStepIndicator();
+                const sections = ['destination-section', 'preferences-section', 'interests-section', 'success-section'];
+                showSection(sections[currentStep - 1]);
+            }
+        }
+
+        function validateCurrentStep() {
+            if (currentStep === 1) {
+                const destination = document.getElementById('destination').value;
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+
+                if (!destination || !startDate || !endDate) {
+                    alert('Please fill in all required fields.');
+                    return false;
+                }
+
+                if (new Date(endDate) <= new Date(startDate)) {
+                    alert('Return date must be after departure date.');
+                    return false;
+                }
+            } else if (currentStep === 2) {
+                const budget = document.getElementById('budget').value;
+                const travelers = document.getElementById('travelers').value;
+
+                if (!budget || !travelers) {
+                    alert('Please fill in all required fields.');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function toggleInterest(element) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            element.classList.toggle('selected', checkbox.checked);
+        }
+
+        function generateItinerary() {
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById('loading').style.display = 'block';
+
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+                currentStep = 4;
+                updateStepIndicator();
+                showSection('success-section');
+            }, 2000);
+        }
+
+        function showItinerary() {
+            updateItineraryData();
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById('itinerary-page').classList.add('active');
+        }
+
+        function getItinerary(destination) {
+            if (itineraryData[destination]) {
+                return itineraryData[destination];
+            }
+            return {
+                name: "Your Destination",
+                days: [
+                    {
+                        title: "Day 1 - Arrival & Exploration",
+                        activities: [
+                            {
+                                name: "Check-in & City Overview",
+                                time: "2:00 PM",
+                                description: "Arrive at your accommodation and get oriented with the city."
+                            },
+                            {
+                                name: "Local Cuisine Experience",
+                                time: "7:00 PM",
+                                description: "Try authentic local dishes at a recommended restaurant."
+                            }
+                        ]
+                    },
+                    {
+                        title: "Day 2 - Main Attractions",
+                        activities: [
+                            {
+                                name: "Top Attraction Visit",
+                                time: "9:00 AM",
+                                description: "Visit the most popular attraction in the area."
+                            },
+                            {
+                                name: "Cultural Experience",
+                                time: "2:00 PM",
+                                description: "Immerse yourself in the local culture and traditions."
+                            }
+                        ]
+                    }
+                ]
+            };
+        }
+
+        function updateItineraryData() {
+            const destination = document.getElementById('destination').value;
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            const budget = document.getElementById('budget').value;
+            const travelers = document.getElementById('travelers').value;
+            const selectedInterests = Array.from(document.querySelectorAll('input[name="interests"]:checked'))
+                .map(cb => cb.value);
+
+            let duration = '3 Days';
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                duration = `${diffDays} Days`;
+
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                const formattedStart = start.toLocaleDateString('en-US', options);
+                const formattedEnd = end.toLocaleDateString('en-US', options);
+                document.getElementById('itinerary-dates').textContent = `${formattedStart} - ${formattedEnd}`;
+            }
+
+            const itineraryInfo = getItinerary(destination);
+
+            document.getElementById('itinerary-destination').textContent = itineraryInfo.name;
+            document.getElementById('trip-duration').textContent = duration;
+            document.getElementById('trip-budget').textContent = budget.charAt(0).toUpperCase() + budget.slice(1);
+            let travelersText = '';
+            if (travelers === '1') travelersText = '1 Person';
+            else if (travelers === '2') travelersText = '2 People';
+            else if (travelers.includes('-')) travelersText = travelers.replace('-', ' ') + ' People';
+            else travelersText = travelers + ' People';
+            document.getElementById('trip-travelers').textContent = travelersText;
+            document.getElementById('trip-interests').textContent =
+                selectedInterests.length > 0
+                    ? selectedInterests.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(', ')
+                    : 'General';
+
+            generateItineraryContent(itineraryInfo, parseInt(duration));
+        }
+
+        function generateItineraryContent(itineraryInfo, daysCount) {
+            const content = document.getElementById('itinerary-content');
+            content.innerHTML = '';
+
+            const actualDays = Math.min(daysCount, itineraryInfo.days.length);
+
+            for (let i = 0; i < actualDays; i++) {
+                const dayData = itineraryInfo.days[i];
+                const dayElement = document.createElement('div');
+                dayElement.className = 'day-schedule';
+
+                let activitiesHTML = dayData.activities.map(activity => `
+                    <div class="activity">
+                        <div class="activity-header">
+                            <h4>${activity.name}</h4>
+                            <span class="activity-time">${activity.time}</span>
+                        </div>
+                        <p>${activity.description}</p>
+                    </div>
+                `).join('');
+
+                dayElement.innerHTML = `
+                    <div class="day-header">
+                        <h3>${dayData.title}</h3>
+                    </div>
+                    <div class="activities">${activitiesHTML}</div>
+                `;
+
+                content.appendChild(dayElement);
+            }
+        }
+
+        function backToForm() {
+            currentStep = 1;
+            updateStepIndicator();
+            document.getElementById('itinerary-page').classList.remove('active');
+            showSection('destination-section');
+
+            // Reset form fields
+            document.getElementById('destination').value = '';
+            document.getElementById('start-date').value = '';
+            document.getElementById('end-date').value = '';
+            document.getElementById('budget').value = '';
+            document.getElementById('travelers').value = '';
+            document.getElementById('additional-info').value = '';
+
+            // Reset interests checkboxes
+            document.querySelectorAll('input[name="interests"]').forEach(cb => {
+                cb.checked = false;
+                cb.closest('.interest-item').classList.remove('selected');
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStepIndicator();
+
+            const today = new Date().toISOString().split('T')[0];
+            const startDateInput = document.getElementById('start-date');
+            const endDateInput = document.getElementById('end-date');
+
+            startDateInput.min = today;
+            endDateInput.min = today;
+
+            startDateInput.addEventListener('change', () => {
+                if(startDateInput.value) {
+                    endDateInput.min = startDateInput.value;
+                    if (endDateInput.value && new Date(endDateInput.value) < new Date(startDateInput.value)) {
+                        endDateInput.value = '';
+                    }
+                }
+            });
+
+            // Prevent form submission on Enter key globally
+            document.addEventListener('keypress', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
